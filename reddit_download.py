@@ -23,11 +23,11 @@ df = pd.DataFrame() # creating dataframe for displaying scraped data
 posts = []
 
 # looping over posts and scraping it
-for submission in subreddit.top():
+for submission in subreddit.top(time_filter='week'):
     temp = {
         'title' : submission.title,
         'upvotes' : submission.score,
-        'id' : submission.id,
+        'id' : submission.fullname,
         'body_text' : submission.selftext
     }
     posts.append(temp)
