@@ -3,10 +3,10 @@
 import praw
 import pandas as pd
 import config
+from text_to_speech import make_mp3_from_submission
 
 # Create an instance of reddit class
 
-#TODO remove personal info and passwords
 reddit = praw.Reddit(username = config.username,
                      password = config.password,
                      client_id = config.client_id,
@@ -14,8 +14,6 @@ reddit = praw.Reddit(username = config.username,
                      user_agent = config.user_agent)
 
 subreddit = reddit.subreddit('AmItheAsshole')
-
-#TODO Change everything below until print statements
 
 df = pd.DataFrame() # creating dataframe for displaying scraped data
 
@@ -32,8 +30,12 @@ for submission in subreddit.top(time_filter='week'):
     }
     posts.append(temp)
 
-print(posts)
 df = pd.DataFrame.from_dict(posts)
 
 print(df.shape)
 print(df.head(10))
+
+top_of_week = subreddit.top(limit=1, time_filter='week')
+
+for top in top_of_week:
+    make_mp3_from_submission(top)
