@@ -1,9 +1,13 @@
+from multiprocessing import AuthenticationError
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw 
 import math
 import praw
 import config
+import requests
+from io import BytesIO
+import pprint
 
 HEIGHT = 560
 WIDTH = 900
@@ -13,26 +17,53 @@ FONT_SIZE = 50
 FONT_WIDTH = 30
 FONT_HEIGHT = 40
 FONT_PATH = 'Video_Components\Courier\CourierPrime-Regular.ttf'
+FONT_COLOR = (255,255,255)
 
 #reddit stories uses 720 by 360 
-image = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
-draw = ImageDraw.Draw(image)
+def make_title_slide(sub):
+    #collect important info of sub
+    title = sub.title
+    submission_id = sub.fullname
+    subreddit_name = f'r/{sub.domain[5:]}'
+    sub_poster = f'u/{sub.author}'
 
-# font = ImageFont.truetype(<font-file>, <font-size>)
-font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
-# draw.text((x, y),"Sample Text",(r,g,b))
-#draw.text((FONT_WIDTH, HEIGHT - 220),"Sample Text But I really love balls lol lol lol lol lol lol lol",(255,255,255),font=font)
-
-
-
-image.save('png.png')
-
-def make_title_slide(title):
-    length = len(title)
-    char_per_line = (WIDTH - 2 * FONT_WIDTH) // FONT_WIDTH
-    num_lines = int(math.ceil(length / char_per_line))
+    #get sub icon
+    sub_icon_link = subreddit.icon_img
+    response = requests.get(sub_icon_link)
+    sub_icon = Image.open(BytesIO(response.content))
 
     image = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
+    add_title_text(image, title)
+
+    #make sub icon a circle
+    icon_border = Image.open('Video_Components\SubBorder.png')
+    icon_border = icon_border.resize((sub_icon.height, sub_icon.width))
+    sub_icon.paste(icon_border, (0,0), icon_border.convert('RGBA')) #third param makes a transparent mask
+
+    #resize sub icon
+    sub_icon = sub_icon.resize((100,100))
+
+    #paste icon onto slide
+    image.paste(sub_icon, (40,40))
+
+    #add subreddit name
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
+    draw.text((160,60), subreddit_name, FONT_COLOR,font=font)
+
+    #add poster
+    font = ImageFont.truetype(FONT_PATH, FONT_SIZE - 20)
+    draw.text((160,120), sub_poster, FONT_COLOR,font=font)
+
+
+
+
+    image.save(f'{submission_id}.png') #save image to its 'fullname.png'
+
+
+def add_title_text(image, title):
+    char_per_line = (WIDTH - 2 * FONT_WIDTH) // FONT_WIDTH
+
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
 
@@ -53,11 +84,10 @@ def make_title_slide(title):
         #keep going with remaining text
         title = title[end:]
         
-        draw.text((FONT_WIDTH, HEIGHT - 220 + FONT_HEIGHT*i), line,(255,255,255),font=font)
+        draw.text((FONT_WIDTH, ((HEIGHT - 60) / 2) + FONT_HEIGHT*i), line,FONT_COLOR,font=font)
 
         i += 1
 
-    image.save('png.png')
 
 
 reddit = praw.Reddit(username = config.username,
@@ -67,7 +97,7 @@ reddit = praw.Reddit(username = config.username,
                      user_agent = config.user_agent)
 
 subreddit = reddit.subreddit('AmItheAsshole')
-top_of_week = subreddit.top(limit=1, time_filter='week')
+top_of_week = subreddit.top(limit=5, time_filter='week')
 
 for top in top_of_week:
-    make_title_slide(top.title)
+    make_title_slide(top)
