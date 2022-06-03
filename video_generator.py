@@ -18,6 +18,9 @@ FONT_WIDTH = 30
 FONT_HEIGHT = 40
 FONT_PATH = 'Video_Components\Courier\CourierPrime-Regular.ttf'
 FONT_COLOR = (255,255,255)
+#Other good user colors
+#(137, 207, 240) 
+USER_COLOR = (74, 163, 217)
 
 #reddit stories uses 720 by 360 
 def make_title_slide(sub):
@@ -33,7 +36,8 @@ def make_title_slide(sub):
     sub_icon = Image.open(BytesIO(response.content))
 
     image = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
-    add_title_text(image, title)
+    image = add_title_text(image, title)
+    
 
     #make sub icon a circle
     icon_border = Image.open('Video_Components\SubBorder.png')
@@ -53,7 +57,7 @@ def make_title_slide(sub):
 
     #add poster
     font = ImageFont.truetype(FONT_PATH, FONT_SIZE - 20)
-    draw.text((160,120), sub_poster, FONT_COLOR,font=font)
+    draw.text((160,120), sub_poster, USER_COLOR ,font=font)
 
 
 
@@ -84,9 +88,11 @@ def add_title_text(image, title):
         #keep going with remaining text
         title = title[end:]
         
-        draw.text((FONT_WIDTH, ((HEIGHT - 60) / 2) + FONT_HEIGHT*i), line,FONT_COLOR,font=font)
+        draw.text((FONT_WIDTH, ((HEIGHT - 200) / 2) + FONT_HEIGHT*i), line,FONT_COLOR,font=font)
 
         i += 1
+
+    return image.crop((0, 0, WIDTH, 200 + i*FONT_HEIGHT ))
 
 
 
