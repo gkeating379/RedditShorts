@@ -1,4 +1,4 @@
-from multiprocessing import AuthenticationError
+from moviepy.editor import AudioFileClip, ImageClip
 from PIL.PngImagePlugin import PngInfo
 from PIL import Image
 from PIL import ImageFont
@@ -7,8 +7,11 @@ import praw
 import config
 import requests
 from io import BytesIO
+import os
 
-HEIGHT = 300
+from text_to_speech import make_mp3_from_text
+
+HEIGHT = 520
 WIDTH = 900
 DIMESIONS = (WIDTH, HEIGHT)
 BACKGROUND_COLOR = (17,17,17)
@@ -20,6 +23,13 @@ FONT_COLOR = (255,255,255)
 #Other good user colors
 #(137, 207, 240) 
 USER_COLOR = (74, 163, 217)
+
+def make_text_slides(sub):
+    if not os.path.exists(sub.fullname):
+        os.makedirs(sub.fullname)
+
+    make_title_slide(sub)
+    make_body_cards(sub)
 
 #reddit stories uses 720 by 360 
 def make_title_slide(sub):
@@ -64,7 +74,7 @@ def make_title_slide(sub):
 
 
 
-    image.save(f'{submission_id}_titleslide.png',  pnginfo=metadata) #save image to its 'fullname.png'
+    image.save(f'{submission_id}/{submission_id}_titleslide.png',  pnginfo=metadata) #save image to its 'fullname.png'
 
 
 def add_title_text(image, title):
@@ -154,9 +164,31 @@ def make_single_body(text, image, submission_id, iteration):
     metadata.add_text("Content", this_slide_text)
 
     cropped_img =  image.crop((0, 0, WIDTH,  40 + i*FONT_HEIGHT ))
-    cropped_img.save(f'{submission_id}_body_{iteration}.png',  pnginfo=metadata) #save image to its 'fullname.png'
+    cropped_img.save(f'{submission_id}/{submission_id}_body_{iteration}.png',  pnginfo=metadata) #save image to its 'fullname.png'
 
+def make_all_slides_mp4(submission_id):
+    '''Build mp4 combining slides with the TTS recording of 
+    their content'''
+    make_title_mp4(submission_id)
 
+def make_title_mp4(submission_id):
+    '''Create mp4 combining title slide with TTS reading of it'''
+    img_path = f'{submission_id}/{submission_id}_titleslide.png'
+    audio_path = f'{submission_id}/{submission_id}_title.mp3'
+    output_path = f'{submission_id}/{submission_id}_title.mp4'
+
+    
+    #make audio
+    title_slide = Image.open(img_path)
+    text = title_slide.text['Content']
+    make_mp3_from_text(text, audio_path)
+
+    img_clip = ImageClip(img_path) 
+    audio_clip = AudioFileClip(audio_path)
+
+    video_clip = img_clip.set_audio(audio_clip)
+    video_clip.duration = audio_clip.duration
+    video_clip.write_videofile(output_path, fps=24)
 
 #testing
 reddit = praw.Reddit(username = config.username,
@@ -169,7 +201,5 @@ subreddit = reddit.subreddit('AmItheAsshole')
 top_of_week = subreddit.top(limit=1, time_filter='week')
 
 for top in top_of_week:
-    make_body_cards(top)
-
-image = Image.open('t3_uzip5a_titleslide.png')
-print(image.text)
+    make_text_slides(top)
+    make_all_slides_mp4(top.fullname)
