@@ -15,7 +15,7 @@ from text_to_speech import make_mp3_from_text
 #parkour video link
 #https://www.youtube.com/watch?v=875A5jdmn8k
 
-HEIGHT = 520
+HEIGHT = 540
 WIDTH = 900
 DIMESIONS = (WIDTH, HEIGHT)
 BACKGROUND_COLOR = (17,17,17)
@@ -167,7 +167,7 @@ def make_single_body(text, image, submission_id, iteration):
     metadata = PngInfo()
     metadata.add_text("Content", this_slide_text)
 
-    cropped_img =  image.crop((0, 0, WIDTH,  40 + i*FONT_HEIGHT ))
+    cropped_img =  image.crop((0, 0, WIDTH, 20 + i*FONT_HEIGHT ))
     cropped_img.save(f'{submission_id}/{submission_id}_body_{iteration}.png',  pnginfo=metadata) #save image to its 'fullname.png'
 
 def make_all_slides_mp4(submission_id):
