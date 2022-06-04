@@ -1,15 +1,14 @@
 from multiprocessing import AuthenticationError
+from PIL.PngImagePlugin import PngInfo
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw 
-import math
 import praw
 import config
 import requests
 from io import BytesIO
-import pprint
 
-HEIGHT = 560
+HEIGHT = 300
 WIDTH = 900
 DIMESIONS = (WIDTH, HEIGHT)
 BACKGROUND_COLOR = (17,17,17)
@@ -59,10 +58,13 @@ def make_title_slide(sub):
     font = ImageFont.truetype(FONT_PATH, FONT_SIZE - 20)
     draw.text((160,120), sub_poster, USER_COLOR ,font=font)
 
+    metadata = PngInfo()
+    metadata.add_text("Content", title)
 
 
 
-    image.save(f'{submission_id}.png') #save image to its 'fullname.png'
+
+    image.save(f'{submission_id}_titleslide.png',  pnginfo=metadata) #save image to its 'fullname.png'
 
 
 def add_title_text(image, title):
@@ -94,8 +96,69 @@ def add_title_text(image, title):
 
     return image.crop((0, 0, WIDTH, 200 + i*FONT_HEIGHT ))
 
+def make_body_cards(sub):
+    body = sub.selftext
+    submission_id = sub.fullname
+    
+    new_img = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
+    make_single_body(body, new_img, submission_id, 1)
 
 
+def make_single_body(text, image, submission_id, iteration):
+    char_per_line = (WIDTH - 2 * FONT_WIDTH) // FONT_WIDTH
+
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
+
+    #wraps the text around the size of the fake reddit card
+    i = 0
+    this_slide_text = ''
+    while(text != ''): 
+
+        if (i+1)*FONT_HEIGHT > HEIGHT:
+            print( (i+1)*FONT_HEIGHT)
+            new_img = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
+            make_single_body(text, new_img, submission_id, iteration + 1)
+            break
+
+        line = text[:char_per_line + 1]
+        end = char_per_line + 1
+
+        #end line on the last space if it exists and
+        #if the phrase is too long for one line
+        if len(text) > char_per_line:
+            last_space = line.rfind(' ')
+            if last_space != -1:
+                line = text[:last_space + 1]
+                end = last_space + 1
+
+        #remove break characters
+        line_break_index = line.find('\n')
+        if line_break_index != -1:
+            line = text[:line_break_index]
+            end = line_break_index + 2
+
+        #keep track of text on this slide
+        this_slide_text += text[:end + 1]
+
+        #keep going with remaining text
+        text = text[end:]
+        
+        draw.text((FONT_WIDTH, FONT_HEIGHT*i), line,FONT_COLOR,font=font)
+
+        i += 1
+
+        
+
+    metadata = PngInfo()
+    metadata.add_text("Content", this_slide_text)
+
+    cropped_img =  image.crop((0, 0, WIDTH,  40 + i*FONT_HEIGHT ))
+    cropped_img.save(f'{submission_id}_body_{iteration}.png',  pnginfo=metadata) #save image to its 'fullname.png'
+
+
+
+#testing
 reddit = praw.Reddit(username = config.username,
                      password = config.password,
                      client_id = config.client_id,
@@ -103,7 +166,10 @@ reddit = praw.Reddit(username = config.username,
                      user_agent = config.user_agent)
 
 subreddit = reddit.subreddit('AmItheAsshole')
-top_of_week = subreddit.top(limit=5, time_filter='week')
+top_of_week = subreddit.top(limit=1, time_filter='week')
 
 for top in top_of_week:
-    make_title_slide(top)
+    make_body_cards(top)
+
+image = Image.open('t3_uzip5a_titleslide.png')
+print(image.text)
