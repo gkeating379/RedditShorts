@@ -1,4 +1,5 @@
-from moviepy.editor import AudioFileClip, ImageClip
+from moviepy.editor import AudioFileClip, ImageClip, VideoFileClip, CompositeVideoClip
+import moviepy
 from PIL.PngImagePlugin import PngInfo
 from PIL import Image
 from PIL import ImageFont
@@ -8,6 +9,7 @@ import config
 import requests
 from io import BytesIO
 import os
+import random
 from os.path import exists
 
 from text_to_speech import make_mp3_from_text
@@ -222,6 +224,81 @@ def make_body_mp4(submission_id):
 
         i += 1 
 
+def get_random_bRoll(submission_id):
+    '''Get a randomly selected broll clip as long as 
+    the TTS for a given post'''
+    
+    output_path = f'{submission_id}/{submission_id}_bRoll.mp4'
+    title_path = f'{submission_id}/{submission_id}_title.mp4'
+    vid_path_frame = f'{submission_id}/{submission_id}_body'
+
+    title = VideoFileClip(title_path)
+
+    #add each duration to get total length of TTS
+    i = 1
+    duration = title.duration
+    while ( exists(f'{vid_path_frame}_{i}.mp4') ):
+        video_clip = VideoFileClip(f'{vid_path_frame}_{i}.mp4')
+        duration += video_clip.duration
+        i += 1
+
+    bRoll_path = 'Video_Components\MCParkour.mp4'
+    bRoll = VideoFileClip(bRoll_path)
+    bRoll_length = bRoll.duration
+
+    start = random.uniform(0, bRoll_length - duration) 
+    end = start + duration
+
+    #output cut video to output_path
+    moviepy.video.io.ffmpeg_tools.ffmpeg_extract_subclip(bRoll_path, start, end, targetname=output_path)
+
+def make_final_video(submission_id):
+    get_random_bRoll(submission_id)
+
+    title_path = f'{submission_id}/{submission_id}_title.mp4'
+    vid_path_frame = f'{submission_id}/{submission_id}_body'
+    bRoll_path = f'{submission_id}/{submission_id}_bRoll.mp4'
+    output_path = f'{submission_id}/{submission_id}_final.mp4'
+
+    bRoll = VideoFileClip(bRoll_path)
+    title = VideoFileClip(title_path)
+
+    #start the title at start of video
+    title = title.set_pos(('center', 'center'))
+    title = title.set_start(0)
+
+    clip_array = [bRoll, title]
+
+    #for each body slide
+    #add to clip_array in order
+    #set start to the end of last clip
+    i = 1
+    used_duration = title.duration
+    while ( exists(f'{vid_path_frame}_{i}.mp4') ):
+        video_clip = VideoFileClip(f'{vid_path_frame}_{i}.mp4')
+        video_clip = video_clip.set_pos(('center', 'center'))
+        video_clip = video_clip.set_start(used_duration)
+        used_duration += video_clip.duration
+        clip_array.append(video_clip)
+        i += 1
+
+        print(video_clip.start)
+
+    output_vid = CompositeVideoClip(clip_array)
+
+    output_vid.write_videofile(
+        output_path,
+        fps=24,
+        remove_temp=True,
+        codec="libx264",
+        audio_codec="aac",
+        threads = 16,
+    )
+
+def video_from_submission(sub):
+    make_text_slides(sub)
+    make_all_slides_mp4(sub.fullname)
+    make_final_video(sub.fullname)
 
 #testing
 reddit = praw.Reddit(username = config.username,
@@ -231,8 +308,11 @@ reddit = praw.Reddit(username = config.username,
                      user_agent = config.user_agent)
 
 subreddit = reddit.subreddit('AmItheAsshole')
-top_of_week = subreddit.top(limit=1, time_filter='week')
+top_of_week = subreddit.top(limit=5, time_filter='week')
 
+i = 0
 for top in top_of_week:
-    make_text_slides(top)
-    make_all_slides_mp4(top.fullname)
+    if i == 4:
+        video_from_submission(top)
+
+    i += 1
