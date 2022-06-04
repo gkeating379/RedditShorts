@@ -8,8 +8,12 @@ import config
 import requests
 from io import BytesIO
 import os
+from os.path import exists
 
 from text_to_speech import make_mp3_from_text
+
+#parkour video link
+#https://www.youtube.com/watch?v=875A5jdmn8k
 
 HEIGHT = 520
 WIDTH = 900
@@ -149,7 +153,7 @@ def make_single_body(text, image, submission_id, iteration):
             end = line_break_index + 2
 
         #keep track of text on this slide
-        this_slide_text += text[:end + 1]
+        this_slide_text += text[:end]
 
         #keep going with remaining text
         text = text[end:]
@@ -170,6 +174,7 @@ def make_all_slides_mp4(submission_id):
     '''Build mp4 combining slides with the TTS recording of 
     their content'''
     make_title_mp4(submission_id)
+    make_body_mp4(submission_id)
 
 def make_title_mp4(submission_id):
     '''Create mp4 combining title slide with TTS reading of it'''
@@ -189,6 +194,34 @@ def make_title_mp4(submission_id):
     video_clip = img_clip.set_audio(audio_clip)
     video_clip.duration = audio_clip.duration
     video_clip.write_videofile(output_path, fps=24)
+
+def make_body_mp4(submission_id):
+    '''Make mp4 for each body slide present'''
+    #frame for while loop
+    img_path_frame = f'{submission_id}/{submission_id}_body'
+
+    #loop for each body slide 1-X
+    i = 1
+    while ( exists(f'{img_path_frame}_{i}.png') ):
+        img_path = f'{img_path_frame}_{i}.png'
+        audio_path = f'{submission_id}/{submission_id}_body_{i}.mp3'
+        output_path = f'{submission_id}/{submission_id}_body_{i}.mp4'
+
+        
+        #make audio
+        title_slide = Image.open(img_path)
+        text = title_slide.text['Content']
+        make_mp3_from_text(text, audio_path)
+
+        img_clip = ImageClip(img_path) 
+        audio_clip = AudioFileClip(audio_path)
+
+        video_clip = img_clip.set_audio(audio_clip)
+        video_clip.duration = audio_clip.duration
+        video_clip.write_videofile(output_path, fps=24)
+
+        i += 1 
+
 
 #testing
 reddit = praw.Reddit(username = config.username,
