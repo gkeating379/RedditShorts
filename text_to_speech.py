@@ -18,5 +18,5 @@ def make_mp3_from_text(text, output_path):
     Output it to output_path'''
 
     engine = pyttsx3.init(driverName='sapi5')
-    engine.save_to_file(text , f'output_path.mp3')
+    engine.save_to_file(text , f'{output_path}.mp3')
     engine.runAndWait()
