@@ -8,7 +8,7 @@ def make_mp3_from_submission(submission):
         reading the title and body of post
     '''
 
-    engine = pyttsx3.init(driverName='sapi5')
+    engine = pyttsx3.init()
     engine.save_to_file(submission.title , f'{submission.fullname}_title.mp3')
     engine.save_to_file(submission.selftext , f'{submission.fullname}_body.mp3')
     engine.runAndWait()
@@ -17,6 +17,6 @@ def make_mp3_from_text(text, output_path):
     '''Create a TTS recording of given text string
     Output it to output_path'''
 
-    engine = pyttsx3.init(driverName='sapi5')
-    engine.save_to_file(text , f'{output_path}.mp3')
+    engine = pyttsx3.init()
+    engine.save_to_file(text , output_path)
     engine.runAndWait()
