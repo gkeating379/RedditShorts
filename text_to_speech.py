@@ -13,7 +13,10 @@ def make_mp3_from_submission(submission):
     engine.save_to_file(submission.selftext , f'{submission.fullname}_body.mp3')
     engine.runAndWait()
 
-    print('New TTS')
+def make_mp3_from_text(text, output_path):
+    '''Create a TTS recording of given text string
+    Output it to output_path'''
 
-    with open('test.txt', 'w') as f:
-        f.write(submission.selftext)
+    engine = pyttsx3.init(driverName='sapi5')
+    engine.save_to_file(text , f'output_path.mp3')
+    engine.runAndWait()
