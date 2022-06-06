@@ -219,8 +219,8 @@ def make_body_mp4(submission_id):
         audio_clip = AudioFileClip(audio_path)
 
         video_clip = img_clip.set_audio(audio_clip)
-        video_clip.duration = audio_clip.duration
-        video_clip.write_videofile(output_path, fps=24)
+        video_clip.duration = audio_clip.duration #TODO Remove slight gap between slides
+        video_clip.write_videofile(output_path, fps=10)
 
         i += 1 
 
@@ -277,7 +277,7 @@ def make_final_video(submission_id):
     while ( exists(f'{vid_path_frame}_{i}.mp4') ):
         video_clip = VideoFileClip(f'{vid_path_frame}_{i}.mp4')
         video_clip = video_clip.set_pos(('center', 'center'))
-        video_clip = video_clip.set_start(used_duration)
+        video_clip = video_clip.set_start(used_duration) 
         used_duration += video_clip.duration
         clip_array.append(video_clip)
         i += 1
