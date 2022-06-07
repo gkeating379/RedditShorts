@@ -5,13 +5,14 @@ from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw 
 import praw
+from torch import true_divide
 import config
 import requests
 from io import BytesIO
 import os
 import random
+import shutil
 from os.path import exists
-
 from text_to_speech import make_mp3_from_text
 
 #parkour video link
@@ -129,10 +130,13 @@ def make_single_body(text, image, submission_id, iteration):
     #wraps the text around the size of the fake reddit card
     i = 0
     this_slide_text = ''
+    line_break = False
     while(text != ''): 
 
-        if (i+1)*FONT_HEIGHT > HEIGHT:
-            print( (i+1)*FONT_HEIGHT)
+        #if too many lines have been written to fit
+        #or a line break has been reached
+        #make a new slide
+        if (i+1)*FONT_HEIGHT > HEIGHT or line_break:
             new_img = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
             make_single_body(text, new_img, submission_id, iteration + 1)
             break
@@ -150,9 +154,18 @@ def make_single_body(text, image, submission_id, iteration):
 
         #remove break characters
         line_break_index = line.find('\n')
+
+        #if a linebreak is the start of the slide just skip it
+        while (line_break_index == 0):
+            line = line[1:]
+            line_break_index = line.find('\n')
+                
+        #if a linebreak is somewhere in the text body then go to next slide
         if line_break_index != -1:
             line = text[:line_break_index]
-            end = line_break_index + 2
+            end = line_break_index + 1
+
+            line_break = True
 
         #keep track of text on this slide
         this_slide_text += text[:end]
@@ -160,11 +173,9 @@ def make_single_body(text, image, submission_id, iteration):
         #keep going with remaining text
         text = text[end:]
         
-        draw.text((FONT_WIDTH, FONT_HEIGHT*i), line,FONT_COLOR,font=font)
+        draw.text((FONT_WIDTH, FONT_HEIGHT*i), line, FONT_COLOR, font=font)
 
         i += 1
-
-        
 
     metadata = PngInfo()
     metadata.add_text("Content", this_slide_text)
@@ -219,7 +230,7 @@ def make_body_mp4(submission_id):
         audio_clip = AudioFileClip(audio_path)
 
         video_clip = img_clip.set_audio(audio_clip)
-        video_clip.duration = audio_clip.duration #TODO Remove slight gap between slides
+        video_clip = video_clip.set_duration(audio_clip.duration) #Remove slight gap at end of mp3
         video_clip.write_videofile(output_path, fps=10)
 
         i += 1 
@@ -258,7 +269,7 @@ def make_final_video(submission_id):
     title_path = f'{submission_id}/{submission_id}_title.mp4'
     vid_path_frame = f'{submission_id}/{submission_id}_body'
     bRoll_path = f'{submission_id}/{submission_id}_bRoll.mp4'
-    output_path = f'{submission_id}/{submission_id}_final.mp4'
+    output_path = f'Output/{submission_id}_final.mp4'
 
     bRoll = VideoFileClip(bRoll_path)
     title = VideoFileClip(title_path)
@@ -282,18 +293,19 @@ def make_final_video(submission_id):
         clip_array.append(video_clip)
         i += 1
 
-        print(video_clip.start)
-
     output_vid = CompositeVideoClip(clip_array)
 
     output_vid.write_videofile(
         output_path,
-        fps=24,
+        fps=60,
         remove_temp=True,
         codec="libx264",
         audio_codec="aac",
         threads = 16,
     )
+
+    #delete frame files to make final video
+    #shutil.rmtree(f'{submission_id}')
 
 def video_from_submission(sub):
     make_text_slides(sub)
