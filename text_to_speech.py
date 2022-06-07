@@ -45,12 +45,8 @@ def change_end_silence(text, path):
     if text[:-1] == '.':
         trim -= 1000
     else:
-        trim -= 500
+        trim -= 300
 
-    print(f'trim = {trim}')
-    print(f'duration = {duration}')
-
-    sound.export('test.mp3', format='mp3')
     sound = sound[:duration - trim] #cut the clip
 
     sound.export(path, format='mp3')
