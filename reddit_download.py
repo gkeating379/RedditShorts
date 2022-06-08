@@ -1,5 +1,6 @@
 #praw docs
 #https://praw.readthedocs.io/en/stable/
+import pickle
 import praw
 from yarg import get
 import video_generator
@@ -81,6 +82,26 @@ def get_random_submission(subreddits, timeframe='week', sample_size=10):
             return subreddit, sub
         i+=1
 
+def generate_random_video(post_list, comments_list):
+    '''Take a list of all post and comment subreddits and 
+    randomly selects a post from them to make into a video'''
+    comment_post = False
+    subreddits = post_list + comments_list
+
+    rand_sub, rand_submission = get_random_submission(subreddits)
+
+    #set if its a comment sub
+    if rand_sub.title in comments_list:
+        comment_post = True
+
+    #check if video has already been made for this post
+    video_ids = pickle.load(open('video_ids.pkl', 'rb'))
     
-rand_sub, rand_submission = get_random_submission(post_list)
-video_generator.video_from_submission(rand_sub, rand_submission)
+    if rand_submission.fullname in video_ids:
+        generate_random_video(post_list, comments_list)
+    else:
+        video_generator.video_from_submission(rand_sub, rand_submission, comment_post)
+        video_ids.append(rand_submission.fullname)
+        pickle.dump(video_ids, open('video_ids.pkl', 'wb'))
+
+generate_random_video(post_list, comment_list)
