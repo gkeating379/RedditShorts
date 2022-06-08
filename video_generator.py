@@ -168,6 +168,7 @@ def make_single_body(text, image, submission_id, iteration):
 
         #keep track of text on this slide
         this_slide_text += text[:end]
+        this_slide_text.replace('\n', '')
 
         #keep going with remaining text
         text = text[end:]
@@ -191,7 +192,7 @@ def make_all_slides_mp4(submission_id):
 def make_title_mp4(submission_id):
     '''Create mp4 combining title slide with TTS reading of it'''
     img_path = f'{submission_id}/{submission_id}_titleslide.png'
-    audio_path = f'{submission_id}/{submission_id}_title.mp3'
+    audio_path = f'{submission_id}/{submission_id}_title.wav'
     output_path = f'{submission_id}/{submission_id}_title.mp4'
 
     
@@ -216,21 +217,21 @@ def make_body_mp4(submission_id):
     i = 1
     while ( exists(f'{img_path_frame}_{i}.png') ):
         img_path = f'{img_path_frame}_{i}.png'
-        audio_path = f'{submission_id}/{submission_id}_body_{i}.mp3'
+        audio_path = f'{submission_id}/{submission_id}_body_{i}.wav'
         output_path = f'{submission_id}/{submission_id}_body_{i}.mp4'
 
         
         #make audio
-        title_slide = Image.open(img_path)
-        text = title_slide.text['Content']
+        slide = Image.open(img_path)
+        text = slide.text['Content']
         make_mp3_from_text(text, audio_path)
 
         img_clip = ImageClip(img_path) 
         audio_clip = AudioFileClip(audio_path)
 
         video_clip = img_clip.set_audio(audio_clip)
-        video_clip = video_clip.set_duration(audio_clip.duration) #Remove slight gap at end of mp3
-        video_clip.write_videofile(output_path, fps=10)
+        video_clip = video_clip.set_duration(audio_clip.duration) 
+        video_clip.write_videofile(output_path, fps=24)
 
         i += 1 
 
