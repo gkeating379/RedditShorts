@@ -32,11 +32,22 @@ FONT_COLOR = (255,255,255)
 USER_COLOR = (74, 163, 217)
 
 def make_text_slides(subreddit, sub):
+    #make directory to hold temp files
     if not os.path.exists(sub.fullname):
         os.makedirs(sub.fullname)
 
     make_title_slide(subreddit, sub)
     make_body_cards(sub)
+
+def make_comment_text_slides(subreddit, sub):
+    '''Make all png text slides for a comment based subreddit
+    e.g. AskReddit'''
+    #make directory to hold temp files
+    if not os.path.exists(sub.fullname):
+        os.makedirs(sub.fullname)
+
+    make_title_slide(subreddit, sub)
+    make_comment_cards(sub)
 
 #reddit stories uses 720 by 360 
 def make_title_slide(subreddit, sub):
@@ -120,8 +131,15 @@ def make_body_cards(sub):
     make_single_body(body, new_img, submission_id, 1)
 
 
-def make_single_body(text, image, submission_id, iteration):
+def make_single_body(text, image, submission_id, iteration, comment=False, comment_num=0):
+    '''Makes a slide for body or comment
+    If body ignore last two params 
+    If comment then give which number comment it is on'''
     char_per_line = (WIDTH - 2 * FONT_WIDTH) // FONT_WIDTH
+    if comment:
+        f'{submission_id}/{submission_id}_comment_{comment_num}_{iteration}.png'
+    else:
+        output_path = f'{submission_id}/{submission_id}_body_{iteration}.png'
 
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
@@ -181,7 +199,17 @@ def make_single_body(text, image, submission_id, iteration):
     metadata.add_text("Content", this_slide_text)
 
     cropped_img =  image.crop((0, 0, WIDTH, 20 + i*FONT_HEIGHT ))
-    cropped_img.save(f'{submission_id}/{submission_id}_body_{iteration}.png',  pnginfo=metadata) #save image to its 'fullname.png'
+    cropped_img.save(output_path,  pnginfo=metadata) #save image to its 'fullname.png'
+
+def make_comment_cards(sub):
+    '''Make png cards for top 5 comments on a post'''
+    sub.comments.replace_more(limit=0) #remove all subcomments
+    i = 1
+    for comment in sub.comments[1:5]:
+        new_img = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
+        make_single_body(comment.body, new_img, sub.fullname, 1, True, i)
+        i += 1
+
 
 def make_all_slides_mp4(submission_id):
     '''Build mp4 combining slides with the TTS recording of 
