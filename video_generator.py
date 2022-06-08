@@ -31,15 +31,15 @@ FONT_COLOR = (255,255,255)
 #(137, 207, 240) 
 USER_COLOR = (74, 163, 217)
 
-def make_text_slides(sub):
+def make_text_slides(subreddit, sub):
     if not os.path.exists(sub.fullname):
         os.makedirs(sub.fullname)
 
-    make_title_slide(sub)
+    make_title_slide(subreddit, sub)
     make_body_cards(sub)
 
 #reddit stories uses 720 by 360 
-def make_title_slide(sub):
+def make_title_slide(subreddit, sub):
     #collect important info of sub
     title = sub.title
     submission_id = sub.fullname
@@ -47,21 +47,23 @@ def make_title_slide(sub):
     sub_poster = f'u/{sub.author}'
 
     #get sub icon
-    sub_icon_link = subreddit.icon_img
-    response = requests.get(sub_icon_link)
-    sub_icon = Image.open(BytesIO(response.content))
+    sub_icon_link = subreddit.community_icon
+    if sub_icon_link != '':
+        response = requests.get(sub_icon_link)
+        sub_icon = Image.open(BytesIO(response.content))
+    else:
+        sub_icon = Image.open('Video_Components\SubDefaultBackground.png')
 
     image = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
     image = add_title_text(image, title)
     
-
+    #resize sub icon
+    sub_icon = sub_icon.resize((100,100))
+    
     #make sub icon a circle
     icon_border = Image.open('Video_Components\SubBorder.png')
     icon_border = icon_border.resize((sub_icon.height, sub_icon.width))
     sub_icon.paste(icon_border, (0,0), icon_border.convert('RGBA')) #third param makes a transparent mask
-
-    #resize sub icon
-    sub_icon = sub_icon.resize((100,100))
 
     #paste icon onto slide
     image.paste(sub_icon, (40,40))
@@ -77,9 +79,6 @@ def make_title_slide(sub):
 
     metadata = PngInfo()
     metadata.add_text("Content", title)
-
-
-
 
     image.save(f'{submission_id}/{submission_id}_titleslide.png',  pnginfo=metadata) #save image to its 'fullname.png'
 
@@ -307,24 +306,24 @@ def make_final_video(submission_id):
     #delete frame files to make final video
     #shutil.rmtree(f'{submission_id}')
 
-def video_from_submission(sub):
-    make_text_slides(sub)
+def video_from_submission(subreddit, sub):
+    make_text_slides(subreddit, sub)
     make_all_slides_mp4(sub.fullname)
     make_final_video(sub.fullname)
 
 #testing
-reddit = praw.Reddit(username = config.username,
-                     password = config.password,
-                     client_id = config.client_id,
-                     client_secret = config.client_secret,
-                     user_agent = config.user_agent)
+# reddit = praw.Reddit(username = config.username,
+#                      password = config.password,
+#                      client_id = config.client_id,
+#                      client_secret = config.client_secret,
+#                      user_agent = config.user_agent)
 
-subreddit = reddit.subreddit('AmItheAsshole')
-top_of_week = subreddit.top(limit=5, time_filter='week')
+# subreddit = reddit.subreddit('AmItheAsshole')
+# top_of_week = subreddit.top(limit=5, time_filter='week')
 
-i = 0
-for top in top_of_week:
-    if i == 4:
-        video_from_submission(top)
+# i = 0
+# for top in top_of_week:
+#     if i == 4:
+#         video_from_submission(top)
 
-    i += 1
+#     i += 1
