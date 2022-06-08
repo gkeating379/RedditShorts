@@ -31,6 +31,8 @@ FONT_COLOR = (255,255,255)
 #(137, 207, 240) 
 USER_COLOR = (74, 163, 217)
 
+COMMENT_COUNT = 5
+
 def make_text_slides(subreddit, sub):
     #make directory to hold temp files
     if not os.path.exists(sub.fullname):
@@ -137,7 +139,7 @@ def make_single_body(text, image, submission_id, iteration, comment=False, comme
     If comment then give which number comment it is on'''
     char_per_line = (WIDTH - 2 * FONT_WIDTH) // FONT_WIDTH
     if comment:
-        f'{submission_id}/{submission_id}_comment_{comment_num}_{iteration}.png'
+        output_path = f'{submission_id}/{submission_id}_comment_{comment_num}_{iteration}.png'
     else:
         output_path = f'{submission_id}/{submission_id}_body_{iteration}.png'
 
@@ -155,7 +157,10 @@ def make_single_body(text, image, submission_id, iteration, comment=False, comme
         #make a new slide
         if (i+1)*FONT_HEIGHT > HEIGHT or line_break:
             new_img = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
-            make_single_body(text, new_img, submission_id, iteration + 1)
+            if comment:
+                make_single_body(text, new_img, submission_id, iteration + 1, True, comment_num)
+            else:
+                make_single_body(text, new_img, submission_id, iteration + 1)
             break
 
         line = text[:char_per_line + 1]
@@ -202,12 +207,12 @@ def make_single_body(text, image, submission_id, iteration, comment=False, comme
     cropped_img.save(output_path,  pnginfo=metadata) #save image to its 'fullname.png'
 
 def make_comment_cards(sub):
-    '''Make png cards for top 5 comments on a post'''
+    '''Make png cards for top X comments on a post'''
     sub.comments.replace_more(limit=0) #remove all subcomments
     i = 1
-    for comment in sub.comments[1:5]:
+    for comment in sub.comments[1:COMMENT_COUNT]:
         new_img = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
-        make_single_body(comment.body, new_img, sub.fullname, 1, True, i)
+        make_single_body(comment.body, new_img, sub.fullname, 1, comment=True, comment_num=i)
         i += 1
 
 
@@ -216,6 +221,12 @@ def make_all_slides_mp4(submission_id):
     their content'''
     make_title_mp4(submission_id)
     make_body_mp4(submission_id)
+
+def make_all_comment_slides_mp4(submission_id):
+    '''Build mp4 combining slides with the TTS recording of 
+    their content'''
+    make_title_mp4(submission_id)
+    make_comment_mp4(submission_id)
 
 def make_title_mp4(submission_id):
     '''Create mp4 combining title slide with TTS reading of it'''
@@ -262,6 +273,33 @@ def make_body_mp4(submission_id):
         video_clip.write_videofile(output_path, fps=24)
 
         i += 1 
+
+def make_comment_mp4(submission_id):
+    '''Make mp4 for each comment slide'''
+    for j in range(1,COMMENT_COUNT+1):
+        #frame for while loop
+        path_frame = f'{submission_id}/{submission_id}_comment_{j}'
+
+        #loop for each body slide 1-X
+        i = 1
+        while ( exists(f'{path_frame}_{i}.png') ):
+            img_path = f'{path_frame}_{i}.png'
+            audio_path = f'{path_frame}_{i}.wav'
+            output_path = f'{path_frame}_{i}.mp4'
+
+            #make audio
+            slide = Image.open(img_path)
+            text = slide.text['Content']
+            make_mp3_from_text(text, audio_path)
+
+            img_clip = ImageClip(img_path) 
+            audio_clip = AudioFileClip(audio_path)
+
+            video_clip = img_clip.set_audio(audio_clip)
+            video_clip = video_clip.set_duration(audio_clip.duration) 
+            video_clip.write_videofile(output_path, fps=24)
+
+            i += 1 
 
 def get_random_bRoll(submission_id):
     '''Get a randomly selected broll clip as long as 
@@ -335,24 +373,87 @@ def make_final_video(submission_id):
     #delete frame files to make final video
     #shutil.rmtree(f'{submission_id}')
 
+def get_random_comment_bRoll(submission_id):
+    '''Get a randomly selected broll clip as long as 
+    the TTS for a given post for comment posts'''
+    
+    output_path = f'{submission_id}/{submission_id}_bRoll.mp4'
+    title_path = f'{submission_id}/{submission_id}_title.mp4'
+    vid_path_frame = f'{submission_id}/{submission_id}_comment'
+
+    title = VideoFileClip(title_path)
+
+    #add each duration to get total length of TTS
+    duration = title.duration
+    for j in range(1,COMMENT_COUNT):
+        i = 1
+        while ( exists(f'{vid_path_frame}_{j}_{i}.mp4') ):
+            video_clip = VideoFileClip(f'{vid_path_frame}_{j}_{i}.mp4')
+            duration += video_clip.duration
+            i += 1
+
+    bRoll_path = 'Video_Components\MCParkour.mp4'
+    bRoll = VideoFileClip(bRoll_path)
+    bRoll_length = bRoll.duration
+
+    start = random.uniform(0, bRoll_length - duration) 
+    end = start + duration
+
+    #output cut video to output_path
+    moviepy.video.io.ffmpeg_tools.ffmpeg_extract_subclip(bRoll_path, start, end, targetname=output_path)
+
+
+def make_final_comment_video(submission_id):
+    get_random_comment_bRoll(submission_id)
+
+    title_path = f'{submission_id}/{submission_id}_title.mp4'
+    vid_path_frame = f'{submission_id}/{submission_id}_comment'
+    bRoll_path = f'{submission_id}/{submission_id}_bRoll.mp4'
+    output_path = f'Output/{submission_id}_final.mp4'
+
+    bRoll = VideoFileClip(bRoll_path)
+    title = VideoFileClip(title_path)
+
+    #start the title at start of video
+    title = title.set_pos(('center', 'center'))
+    title = title.set_start(0)
+
+    clip_array = [bRoll, title]
+
+    #for each body slide
+    #add to clip_array in order
+    #set start to the end of last clip
+    used_duration = title.duration
+    for j in range(1,COMMENT_COUNT):
+        i = 1
+        while ( exists(f'{vid_path_frame}_{j}_{i}.mp4') ):
+            video_clip = VideoFileClip(f'{vid_path_frame}_{j}_{i}.mp4')
+            video_clip = video_clip.set_pos(('center', 'center'))
+            video_clip = video_clip.set_start(used_duration) 
+            used_duration += video_clip.duration
+            clip_array.append(video_clip)
+            i += 1
+
+    output_vid = CompositeVideoClip(clip_array)
+
+    output_vid.write_videofile(
+        output_path,
+        fps=60,
+        remove_temp=True,
+        codec="libx264",
+        audio_codec="aac",
+        threads = 16,
+    )
+
+    #delete frame files to make final video
+    #shutil.rmtree(f'{submission_id}')
+
 def video_from_submission(subreddit, sub):
     make_text_slides(subreddit, sub)
     make_all_slides_mp4(sub.fullname)
     make_final_video(sub.fullname)
 
-#testing
-# reddit = praw.Reddit(username = config.username,
-#                      password = config.password,
-#                      client_id = config.client_id,
-#                      client_secret = config.client_secret,
-#                      user_agent = config.user_agent)
-
-# subreddit = reddit.subreddit('AmItheAsshole')
-# top_of_week = subreddit.top(limit=5, time_filter='week')
-
-# i = 0
-# for top in top_of_week:
-#     if i == 4:
-#         video_from_submission(top)
-
-#     i += 1
+def video_from_comment_submission(subreddit, sub):
+    make_comment_text_slides(subreddit, sub)
+    make_all_comment_slides_mp4(sub.fullname)
+    make_final_comment_video(sub.fullname)
