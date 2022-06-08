@@ -448,12 +448,12 @@ def make_final_comment_video(submission_id):
     #delete frame files to make final video
     #shutil.rmtree(f'{submission_id}')
 
-def video_from_submission(subreddit, sub):
-    make_text_slides(subreddit, sub)
-    make_all_slides_mp4(sub.fullname)
-    make_final_video(sub.fullname)
-
-def video_from_comment_submission(subreddit, sub):
-    make_comment_text_slides(subreddit, sub)
-    make_all_comment_slides_mp4(sub.fullname)
-    make_final_comment_video(sub.fullname)
+def video_from_submission(subreddit, sub, is_comment):
+    if is_comment:
+        make_comment_text_slides(subreddit, sub)
+        make_all_comment_slides_mp4(sub.fullname)
+        make_final_comment_video(sub.fullname)
+    else:
+        make_text_slides(subreddit, sub)
+        make_all_slides_mp4(sub.fullname)
+        make_final_video(sub.fullname)    
