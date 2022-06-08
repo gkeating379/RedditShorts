@@ -49,4 +49,4 @@ def change_end_silence(text, path):
 
     sound = sound[:duration - trim] #cut the clip
 
-    sound.export(path, format='mp3')
+    sound.export(path, format='wav')
