@@ -5,13 +5,10 @@ from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw 
 import praw
-from torch import true_divide
-import config
 import requests
 from io import BytesIO
 import os
 import random
-import shutil
 from os.path import exists
 from text_to_speech import make_mp3_from_text
 
@@ -248,6 +245,9 @@ def make_title_mp4(submission_id):
     video_clip.duration = audio_clip.duration
     video_clip.write_videofile(output_path, fps=24)
 
+    #close clips
+    audio_clip.close()
+
 def make_body_mp4(submission_id):
     '''Make mp4 for each body slide present'''
     #frame for while loop
@@ -272,6 +272,9 @@ def make_body_mp4(submission_id):
         video_clip = img_clip.set_audio(audio_clip)
         video_clip = video_clip.set_duration(audio_clip.duration) 
         video_clip.write_videofile(output_path, fps=24)
+
+        #close clips
+        audio_clip.close()
 
         i += 1 
 
@@ -300,9 +303,12 @@ def make_comment_mp4(submission_id):
             video_clip = video_clip.set_duration(audio_clip.duration) 
             video_clip.write_videofile(output_path, fps=24)
 
+            #close clips
+            audio_clip.close()
+
             i += 1 
 
-def get_random_bRoll(submission_id):
+def get_random_bRoll(submission_id, bRoll_path):
     '''Get a randomly selected broll clip as long as 
     the TTS for a given post'''
     
@@ -320,7 +326,9 @@ def get_random_bRoll(submission_id):
         duration += video_clip.duration
         i += 1
 
-    bRoll_path = 'Video_Components\MCParkour.mp4'
+        #close clips
+        video_clip.close()
+
     bRoll = VideoFileClip(bRoll_path)
     bRoll_length = bRoll.duration
 
@@ -330,8 +338,13 @@ def get_random_bRoll(submission_id):
     #output cut video to output_path
     moviepy.video.io.ffmpeg_tools.ffmpeg_extract_subclip(bRoll_path, start, end, targetname=output_path)
 
-def make_final_video(submission_id):
-    get_random_bRoll(submission_id)
+    #close clips
+    title.close()
+    bRoll.close()
+    
+
+def make_final_video(submission_id, bRoll_path):
+    get_random_bRoll(submission_id, bRoll_path)
 
     title_path = f'{submission_id}/{submission_id}_title.mp4'
     vid_path_frame = f'{submission_id}/{submission_id}_body'
@@ -360,6 +373,9 @@ def make_final_video(submission_id):
         clip_array.append(video_clip)
         i += 1
 
+        #close clips
+        video_clip.close()
+
     output_vid = CompositeVideoClip(clip_array)
 
     output_vid.write_videofile(
@@ -371,10 +387,12 @@ def make_final_video(submission_id):
         threads = 16,
     )
 
-    #delete frame files to make final video
-    #shutil.rmtree(f'{submission_id}')
+    #close clips
+    title.close()
+    bRoll.close()
+    output_vid.close()
 
-def get_random_comment_bRoll(submission_id):
+def get_random_comment_bRoll(submission_id, bRoll_path):
     '''Get a randomly selected broll clip as long as 
     the TTS for a given post for comment posts'''
     
@@ -393,7 +411,9 @@ def get_random_comment_bRoll(submission_id):
             duration += video_clip.duration
             i += 1
 
-    bRoll_path = 'Video_Components\MCParkour.mp4'
+            #close clips
+            video_clip.close()
+
     bRoll = VideoFileClip(bRoll_path)
     bRoll_length = bRoll.duration
 
@@ -403,9 +423,13 @@ def get_random_comment_bRoll(submission_id):
     #output cut video to output_path
     moviepy.video.io.ffmpeg_tools.ffmpeg_extract_subclip(bRoll_path, start, end, targetname=output_path)
 
+    #close clips
+    title.close()
+    bRoll.close()
 
-def make_final_comment_video(submission_id):
-    get_random_comment_bRoll(submission_id)
+
+def make_final_comment_video(submission_id, bRoll_path):
+    get_random_comment_bRoll(submission_id, bRoll_path)
 
     title_path = f'{submission_id}/{submission_id}_title.mp4'
     vid_path_frame = f'{submission_id}/{submission_id}_comment'
@@ -435,6 +459,9 @@ def make_final_comment_video(submission_id):
             clip_array.append(video_clip)
             i += 1
 
+            #close clips
+            video_clip.close()
+
     output_vid = CompositeVideoClip(clip_array)
 
     output_vid.write_videofile(
@@ -446,15 +473,22 @@ def make_final_comment_video(submission_id):
         threads = 16,
     )
 
-    #delete frame files to make final video
-    #shutil.rmtree(f'{submission_id}')
+    #close clips
+    title.close()
+    bRoll.close()
+    output_vid.close()
 
-def video_from_submission(subreddit, sub, is_comment):
+def video_from_submission(subreddit, sub, is_comment, bRoll_path):
+    '''Creates video from submission
+    subreddit -> subreddit object
+    sub -> submission (post)
+    is_comment -> is this a comment based submission (include comments T/F)
+    '''
     if is_comment:
         make_comment_text_slides(subreddit, sub)
         make_all_comment_slides_mp4(sub.fullname)
-        make_final_comment_video(sub.fullname)
+        make_final_comment_video(sub.fullnam, bRoll_path)
     else:
         make_text_slides(subreddit, sub)
         make_all_slides_mp4(sub.fullname)
-        make_final_video(sub.fullname)    
+        make_final_video(sub.fullname, bRoll_path)    

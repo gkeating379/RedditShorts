@@ -3,12 +3,13 @@
 import pickle
 import shutil
 import praw
-from yarg import get
 import video_generator
 import random
 import pandas as pd
 import config
-from text_to_speech import make_mp3_from_submission
+import sys
+
+bRoll_path = sys.argv[1]
 
 #subreddit list for post only
 post_list = ['confession', 'offmychest', 'AmItheAsshole', 'TrueOffMyChest']
@@ -101,7 +102,10 @@ def generate_random_video(post_list, comments_list):
     if rand_submission.fullname in video_ids:
         generate_random_video(post_list, comments_list)
     else:
-        video_generator.video_from_submission(rand_sub, rand_submission, comment_post)
+        #create video
+        video_generator.video_from_submission(rand_sub, rand_submission, comment_post, bRoll_path)
+
+        #add submission id to list to not reuse content
         video_ids.append(rand_submission.fullname)
         pickle.dump(video_ids, open('video_ids.pkl', 'wb'))
 
