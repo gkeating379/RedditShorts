@@ -1,6 +1,7 @@
 #praw docs
 #https://praw.readthedocs.io/en/stable/
 import pickle
+import shutil
 import praw
 from yarg import get
 import video_generator
@@ -103,5 +104,7 @@ def generate_random_video(post_list, comments_list):
         video_generator.video_from_submission(rand_sub, rand_submission, comment_post)
         video_ids.append(rand_submission.fullname)
         pickle.dump(video_ids, open('video_ids.pkl', 'wb'))
+
+    shutil.rmtree(rand_submission.fullname)
 
 generate_random_video(post_list, comment_list)

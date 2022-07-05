@@ -212,6 +212,7 @@ def make_comment_cards(sub):
     i = 1
     for comment in sub.comments[1:COMMENT_COUNT]:
         new_img = Image.new('RGB', DIMESIONS, BACKGROUND_COLOR)
+        print(comment.body)
         make_single_body(comment.body, new_img, sub.fullname, 1, comment=True, comment_num=i)
         i += 1
 
