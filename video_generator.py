@@ -373,8 +373,6 @@ def make_final_video(submission_id, bRoll_path):
         clip_array.append(video_clip)
         i += 1
 
-        #close clips
-        video_clip.close()
 
     output_vid = CompositeVideoClip(clip_array)
 
@@ -459,8 +457,6 @@ def make_final_comment_video(submission_id, bRoll_path):
             clip_array.append(video_clip)
             i += 1
 
-            #close clips
-            video_clip.close()
 
     output_vid = CompositeVideoClip(clip_array)
 
