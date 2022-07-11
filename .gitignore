@@ -1,5 +1,8 @@
 config.py
 .mp3
+wav
+.mp4
+client_secret.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
