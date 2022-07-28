@@ -11,7 +11,7 @@ import sys
 bRoll_path = sys.argv[1]
 
 #subreddit list for post only
-post_list = []#['confession', 'offmychest', 'AmItheAsshole', 'TrueOffMyChest']
+post_list = ['confession', 'offmychest', 'AmItheAsshole', 'TrueOffMyChest']
 
 #subreddit list for comment only
 comment_list =['AskReddit']
