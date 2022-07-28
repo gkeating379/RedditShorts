@@ -1,5 +1,6 @@
 # RedditShorts
 Makes the Reddit post text to speech videos that are common and popular on short video streaming platforms like TikTok and YouTube Shorts
+Example Videos: https://www.youtube.com/channel/UCQ_JcVtii2Y3y9mSm5fg-pw
 
 Outputs go to output folder and are named based on the id of the post they came from (ex. t3_v2ahu9_final.mp4)
 
