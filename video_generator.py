@@ -483,7 +483,7 @@ def video_from_submission(subreddit, sub, is_comment, bRoll_path):
     if is_comment:
         make_comment_text_slides(subreddit, sub)
         make_all_comment_slides_mp4(sub.fullname)
-        make_final_comment_video(sub.fullnam, bRoll_path)
+        make_final_comment_video(sub.fullname, bRoll_path)
     else:
         make_text_slides(subreddit, sub)
         make_all_slides_mp4(sub.fullname)
